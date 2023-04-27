@@ -7,3 +7,5 @@ edition = "2021"
 
 [dependencies]
 rapier2d = { version = "*", features = [ "simd-stable" ] }
+bevy = "*"
+bevy_rapier2d = "*"

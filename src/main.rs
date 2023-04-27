@@ -1,56 +1,45 @@
-use rapier2d::prelude::*;
+use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
+use bevy_rapier2d::prelude::*;
 
 fn main() {
-  let mut rigid_body_set = RigidBodySet::new();
-  let mut collider_set = ColliderSet::new();
+ App::new()
+  .add_plugins(DefaultPlugins)
+  .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
+  .add_plugin(RapierDebugRenderPlugin::default())
+  .add_startup_system(setup_graphics)
+  .add_startup_system(setup_physics)
+  .add_system(print_ball_altitude)
+  .run();
+}
 
-  /* Create the ground. */
-  let collider = ColliderBuilder::cuboid(100.0, 0.1).build();
-  collider_set.insert(collider);
+fn setup_graphics(mut commands: Commands) {
+    // Add a camera so we can see the debug-render.
+    commands.spawn(Camera2dBundle::default());
+}
 
-  /* Create the bouncing ball. */
-  let rigid_body = RigidBodyBuilder::dynamic()
-          .translation(vector![0.0, 10.0])
-          .build();
-  let collider = ColliderBuilder::ball(0.5).restitution(0.7).build();
-  let ball_body_handle = rigid_body_set.insert(rigid_body);
-  collider_set.insert_with_parent(collider, ball_body_handle, &mut rigid_body_set);
+fn setup_physics(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>,mut materials: ResMut<Assets<ColorMaterial>>, asset_server: Res<AssetServer>) {
+    /* Create the ground. */
+    commands
+        .spawn(Collider::cuboid(500.0, 50.0))
+        .insert(TransformBundle::from(Transform::from_xyz(0.0, -100.0, 0.0)));
 
-  /* Create other structures necessary for the simulation. */
-  let gravity = vector![0.0, -9.81];
-  let integration_parameters = IntegrationParameters::default();
-  let mut physics_pipeline = PhysicsPipeline::new();
-  let mut island_manager = IslandManager::new();
-  let mut broad_phase = BroadPhase::new();
-  let mut narrow_phase = NarrowPhase::new();
-  let mut impulse_joint_set = ImpulseJointSet::new();
-  let mut multibody_joint_set = MultibodyJointSet::new();
-  let mut ccd_solver = CCDSolver::new();
-  let physics_hooks = ();
-  let event_handler = ();
+    /* Create the bouncing ball. */
+    commands
+        .spawn(RigidBody::Dynamic)
+        .insert(Collider::ball(50.0))
+        .insert(Restitution::coefficient(0.7))
+        .insert(TransformBundle::from(Transform::from_xyz(0.0, 400.0, 0.0)));
 
-  /* Run the game loop, stepping the simulation once per frame. */
-  for _ in 0..200 {
-    physics_pipeline.step(
-      &gravity,
-      &integration_parameters,
-      &mut island_manager,
-      &mut broad_phase,
-      &mut narrow_phase,
-      &mut rigid_body_set,
-      &mut collider_set,
-      &mut impulse_joint_set,
-      &mut multibody_joint_set,
-      &mut ccd_solver,
-      None,
-      &physics_hooks,
-      &event_handler,
-    );
+    commands.spawn(MaterialMesh2dBundle {
+        mesh: meshes.add(shape::Circle::new(100.).into()).into(),
+        material: materials.add(ColorMaterial::from(Color::rgb(7.5, 0.0, 7.5))),
+        transform: Transform::from_translation(Vec3::new(-200., 0., 0.)),
+        ..default()
+    });
+}
 
-    let ball_body = &rigid_body_set[ball_body_handle];
-    println!(
-      "Ball altitude: {}",
-      ball_body.translation().y
-    );
-  }
+fn print_ball_altitude(positions: Query<&Transform, With<RigidBody>>) {
+    for transform in positions.iter() {
+        println!("Ball altitude: {}", transform.translation.y);
+    }
 }
