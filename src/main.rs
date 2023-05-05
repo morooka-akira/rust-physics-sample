@@ -2,14 +2,14 @@ use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
 use bevy_rapier2d::prelude::*;
 
 fn main() {
- App::new()
-  .add_plugins(DefaultPlugins)
-  .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
-  .add_plugin(RapierDebugRenderPlugin::default())
-  .add_startup_system(setup_graphics)
-  .add_startup_system(setup_physics)
-  .add_system(print_ball_altitude)
-  .run();
+    App::new()
+        .add_plugins(DefaultPlugins)
+        .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
+        .add_plugin(RapierDebugRenderPlugin::default())
+        .add_startup_system(setup_graphics)
+        .add_startup_system(setup_physics)
+        .add_system(print_ball_altitude)
+        .run();
 }
 
 fn setup_graphics(mut commands: Commands) {
@@ -17,7 +17,12 @@ fn setup_graphics(mut commands: Commands) {
     commands.spawn(Camera2dBundle::default());
 }
 
-fn setup_physics(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>,mut materials: ResMut<Assets<ColorMaterial>>, asset_server: Res<AssetServer>) {
+fn setup_physics(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    asset_server: Res<AssetServer>,
+) {
     /* Create the ground. */
     commands
         .spawn(Collider::cuboid(500.0, 50.0))
