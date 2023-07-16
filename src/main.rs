@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
 use bevy_rapier2d::prelude::*;
 
@@ -23,7 +25,9 @@ struct CircleTag;
 
 #[derive(Default, Component)]
 struct CircleSpeed {
-    speed: f32,
+    angle: f32,
+    speed_x: f32,
+    speed_y: f32,
 }
 
 #[derive(Default, Component)]
@@ -39,6 +43,9 @@ fn setup_physics(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
+    let angle = PI / 6.0;
+    let vx = angle.sin() * 3.0;
+    let vy = angle.cos() * 3.0;
     commands.spawn((
         MaterialMesh2dBundle {
             mesh: meshes.add(shape::Circle::new(30.).into()).into(),
@@ -47,7 +54,11 @@ fn setup_physics(
             ..default()
         },
         CircleTag::default(),
-        CircleSpeed { speed: 3. },
+        CircleSpeed {
+            angle,
+            speed_x: vx,
+            speed_y: vy,
+        },
     ));
     commands.spawn((
         MaterialMesh2dBundle {
@@ -60,14 +71,25 @@ fn setup_physics(
     ));
 }
 
+const VIEW_WIDTH: f32 = 300.;
+const VIEW_HEIGHT: f32 = 300.;
 // 左右に動く
 fn circle_move_left_right(mut query: Query<(&mut CircleSpeed, &mut Transform)>) {
     let (mut speed, mut transform) = query.single_mut();
-
-    if transform.translation.x > 300. || transform.translation.x < -300. {
-        speed.speed = 0. - speed.speed;
+    if (transform.translation.x > VIEW_WIDTH || transform.translation.x < 0.)
+        || (transform.translation.y > VIEW_HEIGHT || transform.translation.y < 0.)
+    {
+        let x = VIEW_WIDTH / 2.;
+        let y = VIEW_HEIGHT / 2.;
+        // 360 / 10 = 36度ずつ回転させる
+        speed.angle += 2.0 * PI / 10.0;
+        transform.translation.x = x;
+        transform.translation.y = y;
+        speed.speed_x = speed.angle.cos() * 3.0;
+        speed.speed_y = speed.angle.sin() * 3.0;
     }
-    transform.translation.x += speed.speed;
+    transform.translation.x += speed.speed_x;
+    transform.translation.y += speed.speed_y;
 }
 
 fn box_movement_system(
@@ -77,7 +99,9 @@ fn box_movement_system(
     let (_, mut transform) = query.single_mut();
 
     if keyboard_input.pressed(KeyCode::Left) {
-        println!("left:")
+        println!("left:");
+        let movement_direction = transform.rotation * Vec3::X;
+        transform.translation -= movement_direction * 1.0;
     }
 
     if keyboard_input.pressed(KeyCode::Right) {
@@ -87,6 +111,14 @@ fn box_movement_system(
     }
 
     if keyboard_input.pressed(KeyCode::Up) {
-        println!("up:")
+        println!("up:");
+        let movement_direction = transform.rotation * Vec3::Y;
+        transform.translation += movement_direction * 1.0;
+    }
+
+    if keyboard_input.pressed(KeyCode::Down) {
+        println!("down:");
+        let movement_direction = transform.rotation * Vec3::Y;
+        transform.translation -= movement_direction * 1.0;
     }
 }
